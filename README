@@ -1,0 +1,9 @@
+This repo will eventually contain my code written for CS 572 Linux Device
+Drivers at PSU. This should include:
+
+The .config used to configure and build the 2.6.24 kernel.
+A hello world loadable module.
+A block device driver.
+A USB device driver for some device which will be built using a teensy.
+
+All code is GPLv2 and I may even add a license file at some point.

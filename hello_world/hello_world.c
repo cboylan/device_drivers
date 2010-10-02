@@ -7,7 +7,7 @@ static int __init my_init (void)
     return 0;
 }
 
-static int __exit my_exit (void)
+static void __exit my_exit (void)
 {
     printk(KERN_INFO "Hello: module unloaded from 0x%p\n", my_exit);
 }

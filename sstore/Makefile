@@ -2,7 +2,7 @@
 ### Copyright, Jerry Cooperstein, coop@linuxfoundation.org 2/2003 - 11/2009 ####
 ### License: GPLv2 ###
 
-obj-m +=  hello_world.o
+obj-m +=  sstore.o
 
 export KROOT=/lib/modules/2.6.24.7-test2/build
 

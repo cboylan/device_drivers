@@ -21,10 +21,10 @@ static int sstore_open(struct inode * inode, struct file * file){
 static int sstore_release(struct inode * inode, struct file * file){
 }
 
-static size_t sstore_read(struct file * file, char __user * buf, size_t lbuf, loff_t * ppos){
+static ssize_t sstore_read(struct file * file, char __user * buf, size_t lbuf, loff_t * ppos){
 }
 
-static size_t sstore_write(struct file * file, const char __user * buf, size_t lbuf, loff_t * ppos){
+static ssize_t sstore_write(struct file * file, const char __user * buf, size_t lbuf, loff_t * ppos){
 }
 
 static int sstore_ioctl(struct inode * inode, struct file * file, unsigned int cmd, unsigned long arg){

@@ -2,6 +2,7 @@
 #include <linux/fs.h>
 #include <linux/cdev.h>
 
+#define NUM_SSTORE_DEVICES 2
 #define NAME_SIZE 8
 #define DEV_NAME "sstore"
 

@@ -41,7 +41,7 @@ static int __init sstore_init (void)
         return -EPERM;
     }
 
-    sstore_class = class_create(THIS_MODULE, DEV_NAME);
+    //sstore_class = class_create(THIS_MODULE, DEV_NAME);
 
     for(i = 0; i < NUM_SSTORE_DEVICES; ++i){
         /* Allocate memory for the per-device structure */
@@ -80,15 +80,14 @@ static void __exit sstore_exit (void)
     unregister_chrdev_region((sstore_dev_number), NUM_CMOS_BANKS);
 
     /* Release I/O region */
-    for (i=0; i<NUM_CMOS_BANKS; i++) {
+    for (i = 0; i<NUM_SSTORE_DEVICES; ++i){
         device_destroy (sstore_class, MKDEV(MAJOR(sstore_dev_number), i));
-        release_region(addrports[i], 2);
         cdev_del(&sstore_devp[i]->cdev);
         kfree(sstore_devp[i]);
     }
 
     /* Destroy sstore_class */
-    class_destroy(sstore_class);
+    //class_destroy(sstore_class);
 
     printk(KERN_INFO "sstore: driver removed.\n");
     return;

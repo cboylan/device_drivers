@@ -14,6 +14,8 @@ static struct file_operations sstore_fops = {
 };
 
 static dev_t sstore_dev_number;
+static dev_t sstore_major = 0;
+static dev_t sstore_minor = 0;
 struct class * sstore_class;
 struct sstore_dev * sstore_devp[NUM_SSTORE_DEVICES];
 
@@ -37,10 +39,11 @@ static int __init sstore_init (void)
     int i;
     int ret;
 
-    if(alloc_chrdev_region(&sstore_dev_number, 0, NUM_SSTORE_DEVICES, DEV_NAME) < 0){
+    if(alloc_chrdev_region(&sstore_dev_number, sstore_minor, NUM_SSTORE_DEVICES, DEV_NAME) < 0){
         printk(KERN_DEBUG "sstore: unable to register device.\n");
         return -EPERM;
     }
+    sstore_major = MAJOR(sstore_dev_number);
 
     sstore_class = class_create(THIS_MODULE, DEV_NAME);
 
@@ -59,14 +62,14 @@ static int __init sstore_init (void)
         sstore_devp[i]->cdev.owner = THIS_MODULE;
 
         /* Connect the major/minor number to the cdev */
-        ret = cdev_add(&sstore_devp[i]->cdev, (sstore_dev_number + i), 1);
+        ret = cdev_add(&sstore_devp[i]->cdev, MKDEV(sstore_major, sstore_minor + i), 1);
         if (ret) {
             printk(KERN_DEBUG "sstore: bad cdev\n");
             return ret;
         }
 
         /* Send uevents to udev, so it'll create /dev nodes */
-        device_create(sstore_class, NULL, MKDEV(MAJOR(sstore_dev_number), i), "sstore%d", i);
+        device_create(sstore_class, NULL, MKDEV(sstore_major, sstore_minor + i), "sstore%d", i);
     }
 
     printk(KERN_INFO "sstore: driver initialized.\n");
@@ -78,11 +81,11 @@ static void __exit sstore_exit (void)
     int i;
 
     /* Release the major number */
-    unregister_chrdev_region((sstore_dev_number), NUM_SSTORE_DEVICES);
+    unregister_chrdev_region(MKDEV(sstore_major, sstore_minor), NUM_SSTORE_DEVICES);
 
     /* Release I/O region */
     for (i = 0; i < NUM_SSTORE_DEVICES; ++i){
-        device_destroy (sstore_class, MKDEV(MAJOR(sstore_dev_number), i));
+        device_destroy (sstore_class, MKDEV(sstore_major, sstore_minor + i));
         cdev_del(&sstore_devp[i]->cdev);
         kfree(sstore_devp[i]);
     }

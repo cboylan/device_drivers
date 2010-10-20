@@ -1,14 +1,16 @@
-#include <linux/list.h>
 #include <linux/fs.h>
 #include <linux/cdev.h>
+
+#include "sstore_shared.h"
 
 #define NUM_SSTORE_DEVICES 2
 #define NAME_SIZE 8
 #define DEV_NAME "sstore"
 
 struct sstore_dev {
-    struct list_head sstore_head;
-    unsigned int blob_size;
+    struct sstore_blob ** sstore_blobp;
+    unsigned int max_num_of_blobs;
+    unsigned int max_blob_size;
     int sstore_number;
     struct cdev cdev;
     char sstore_name[NAME_SIZE];

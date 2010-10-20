@@ -2,7 +2,7 @@
 #include <linux/init.h>
 #include <linux/device.h>
 
-#include "sstore.h"
+#include "sstore_kernel.h"
 
 static struct file_operations sstore_fops = {
     .owner   = THIS_MODULE,
@@ -20,9 +20,17 @@ struct class * sstore_class;
 struct sstore_dev * sstore_devp[NUM_SSTORE_DEVICES];
 
 static int sstore_open(struct inode * inode, struct file * file){
+    /* TODO: Check that root is the user opening the file. */
+
+    /* Tie the sstore_dev struct for this "file" with its file * */
+    file->private_data = container_of(inode->i_cdev, struct sstore_dev, cdev);
+
+    return 0;
 }
 
 static int sstore_release(struct inode * inode, struct file * file){
+    /* TODO: Free blobs pointed to in the array of blob pointers */
+    return 0;
 }
 
 static ssize_t sstore_read(struct file * file, char __user * buf, size_t lbuf, loff_t * ppos){
@@ -56,6 +64,10 @@ static int __init sstore_init (void)
         }
 
         sstore_devp[i]->sstore_number = i;
+        /* TODO: Get max sizes from commandline args. */
+        /* TODO: set the blob size. */
+        /* TODO: Initialize the array of blobs pointers. */
+        /* TODO: Init lock(s) */
 
         /* Connect the file operations with the cdev */
         cdev_init(&sstore_devp[i]->cdev, &sstore_fops);

@@ -45,11 +45,11 @@ static int sstore_release(struct inode * inode, struct file * file){
     struct sstore_dev * devp = file->private_data;
 
     for(i = 0; i < num_of_blobs; ++i){
-        if(devp->sstore_blob[i]){
-            if(devp->sstore_blob[i]->data){
-                kfree(devp->sstore_blob[i]->data);
+        if(devp->sstore_blobp[i]){
+            if(devp->sstore_blobp[i]->data){
+                kfree(devp->sstore_blobp[i]->data);
             }
-            kfree(devp->sstore_blob[i]);
+            kfree(devp->sstore_blobp[i]);
         }
     }
 
@@ -97,7 +97,7 @@ static int __init sstore_init (void)
 
         /* TODO: Init lock(s) */
         mutex_init(&sstore_devp[i]->sstore_lock);
-        init_wait_queue_head(&sstore_devp[i]->sstore_wq);
+        init_waitqueue_head(&sstore_devp[i]->sstore_wq);
 
         /* Connect the file operations with the cdev */
         cdev_init(&sstore_devp[i]->cdev, &sstore_fops);

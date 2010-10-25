@@ -42,13 +42,14 @@ static int sstore_open(struct inode * inode, struct file * file){
 
 static int sstore_release(struct inode * inode, struct file * file){
     int i;
+    struct sstore_dev * devp = file->private_data;
 
     for(i = 0; i < num_of_blobs; ++i){
-        if(file->private_data->sstore_blob[i]){
-            if(file->private_data->sstore_blob[i]->data){
-                kfree(file->private_data->sstore_blob[i]->data);
+        if(devp->sstore_blob[i]){
+            if(devp->sstore_blob[i]->data){
+                kfree(devp->sstore_blob[i]->data);
             }
-            kfree(file->private_data->sstore_blob[i]);
+            kfree(devp->sstore_blob[i]);
         }
     }
 

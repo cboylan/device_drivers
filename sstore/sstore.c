@@ -1,8 +1,20 @@
 #include <linux/module.h>
 #include <linux/init.h>
 #include <linux/device.h>
+#include <linux/moduleparam.h>
 
 #include "sstore_kernel.h"
+
+static unsigned int num_of_blobs = 32;
+static unsigned int blob_size = 128;
+module_param(num_of_blobs, uint, S_IRUGO);
+module_param(blob_size, uint, S_IRUGO);
+
+static int sstore_open(struct inode *, struct file *);
+static int sstore_release(struct inode *, struct file *);
+static ssize_t sstore_read(struct file *, char __user *, size_t, loff_t *);
+static ssize_t sstore_write(struct file *, const char __user *, size_t, loff_t *);
+static int sstore_ioctl(struct inode *, struct file *, unsigned int, unsigned long);
 
 static struct file_operations sstore_fops = {
     .owner   = THIS_MODULE,
@@ -29,7 +41,17 @@ static int sstore_open(struct inode * inode, struct file * file){
 }
 
 static int sstore_release(struct inode * inode, struct file * file){
-    /* TODO: Free blobs pointed to in the array of blob pointers */
+    int i;
+
+    for(i = 0; i < num_of_blobs; ++i){
+        if(file->private_data->sstore_blob[i]){
+            if(file->private_data->sstore_blob[i]->data){
+                kfree(file->private_data->sstore_blob[i]->data);
+            }
+            kfree(file->private_data->sstore_blob[i]);
+        }
+    }
+
     return 0;
 }
 
@@ -44,6 +66,7 @@ static int sstore_ioctl(struct inode * inode, struct file * file, unsigned int c
 
 static int __init sstore_init (void)
 {
+    /* TODO: Cleanup if error occurs in the middle of this function */
     int i;
     int ret;
 
@@ -64,10 +87,16 @@ static int __init sstore_init (void)
         }
 
         sstore_devp[i]->sstore_number = i;
-        /* TODO: Get max sizes from commandline args. */
-        /* TODO: set the blob size. */
-        /* TODO: Initialize the array of blobs pointers. */
+
+        sstore_devp[i]->sstore_blobp = kzalloc(num_of_blobs * sizeof(struct sstore_dev *), GFP_KERNEL);
+        if (!sstore_devp[i]->sstore_blobp){
+            printk(KERN_DEBUG "sstore: bad kzalloc\n");
+            return -ENOMEM;
+        }
+
         /* TODO: Init lock(s) */
+        mutex_init(&sstore_devp[i]->sstore_lock);
+        init_wait_queue_head(&sstore_devp[i]->sstore_wq);
 
         /* Connect the file operations with the cdev */
         cdev_init(&sstore_devp[i]->cdev, &sstore_fops);
@@ -99,6 +128,7 @@ static void __exit sstore_exit (void)
     for (i = 0; i < NUM_SSTORE_DEVICES; ++i){
         device_destroy (sstore_class, MKDEV(sstore_major, sstore_minor + i));
         cdev_del(&sstore_devp[i]->cdev);
+        kfree(sstore_devp[i]->sstore_blobp);
         kfree(sstore_devp[i]);
     }
 

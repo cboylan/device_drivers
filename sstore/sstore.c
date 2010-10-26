@@ -69,7 +69,10 @@ static ssize_t sstore_read(struct file * file, char __user * buf, size_t lbuf, l
         return -EPERM;
     }
 
-    copy_from_user(&blob, buf, sizeof(struct sstore_blob));
+    bytes_not_copied = copy_from_user(&blob, buf, sizeof(struct sstore_blob));
+    if(bytes_not_copied != 0){
+        return -EIO;
+    }
 
     if(blob.index >= num_of_blobs || blob.size > blob_size){
         return -EPERM;
@@ -101,19 +104,29 @@ static ssize_t sstore_write(struct file * file, const char __user * buf, size_t 
         return -EPERM;
     }
 
-    copy_from_user(&blob, buf, sizeof(struct sstore_blob));
+    bytes_not_copied = copy_from_user(&blob, buf, sizeof(struct sstore_blob));
+    if(bytes_not_copied != 0){
+        return -EIO;
+    }
 
     if(blob.index >= num_of_blobs || blob.size > blob_size){
         return -EPERM;
     }
 
     new_data = kmalloc(blob.size, GFP_KERNEL);
+    if(!new_data){
+        return -ENOMEM;
+    }
     bytes_not_copied = copy_from_user(new_data, blob.data, blob.size);
 
     mutex_lock(&devp->sstore_lock);
     if(devp->sstore_blobp[blob.index] == NULL){
         mutex_unlock(&devp->sstore_lock);
         blobp = kmalloc(sizeof(struct sstore_blob), GFP_KERNEL);
+        if(!blobp){
+            kfree(new_data);
+            return -ENOMEM;
+        }
         mutex_lock(&devp->sstore_lock);
         devp->sstore_blobp[blob.index] = blobp;
     }

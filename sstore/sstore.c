@@ -57,9 +57,75 @@ static int sstore_release(struct inode * inode, struct file * file){
 }
 
 static ssize_t sstore_read(struct file * file, char __user * buf, size_t lbuf, loff_t * ppos){
+    int bytes_not_copied = 0;
+    struct sstore_blob blob;
+    struct sstore_dev * devp = file->private_data;
+
+    if(lbuf != sizeof(struct sstore_blob)){
+        return -EPERM;
+    }
+
+    copy_from_user(&blob, buf, sizeof(struct sstore_blob));
+
+    if(blob.index >= num_of_blobs || blob.size > blob_size){
+        return -EPERM;
+    }
+
+    mutex_lock(&devp->sstore_lock);
+    while(devp->sstore_blobp[blob.index] == NULL){
+        mutex_unlock(&devp->sstore_lock);
+        if(wait_event_interruptable(devp->sstore_wq, devp->sstore_blobp[blob.index] != NULL)){
+            return -ERESTARTSYS;
+        }
+        mutex_lock(&devp->sstore_lock);
+    }
+    bytes_not_copied = copy_to_user(blob.data, devp->sstore_blobp[index]->data, blob.size);
+    mutex_unlock(&devp->sstore_lock);
+
+    return blob.size - bytes_not_copied;
 }
 
 static ssize_t sstore_write(struct file * file, const char __user * buf, size_t lbuf, loff_t * ppos){
+    int bytes_not_copied = 0;
+    struct sstore_blob blob;
+    struct sstore_blob * blobp;
+    char * new_data;
+    struct sstore_dev * devp = file->private_data;
+
+    if(lbuf != sizeof(struct sstore_blob)){
+        return -EPERM;
+    }
+
+    copy_from_user(&blob, buf, sizeof(struct sstore_blob));
+
+    if(blob.index >= num_of_blobs || blob.size > blob_size){
+        return -EPERM;
+    }
+
+    new_data = kmalloc(blob.size, GFP_KERNEL);
+    bytes_not_copied = copy_from_user(new_data, blob.data, blob.size);
+
+    mutex_lock(&devp->sstore_lock);
+    if(devp->sstore_blobp[blob.index] == NULL){
+        mutex_unlock(&devp->sstore_lock);
+        blobp = kmalloc(sizeof(struct sstore_blob), GFP_KERNEL);
+        mutex_lock(&devp->sstore_lock);
+        devp->sstore_blobp[blob.index] = blobp;
+    }
+    else{
+        mutex_unlock(&devp->sstore_lock);
+        kfree(devp->sstore_blobp[blob.index]->data);
+        mutex_lock(&devp->sstore_lock);
+    }
+
+    devp->sstore_blobp[blob.index]->size = blob.size;
+    devp->sstore_blobp[blob.index]->index = blob.index;
+    devp->sstore_blobp[blob.index]->data = new_data;
+    mutex_unlock(&devp->sstore_lock);
+
+    wake_up(&devp->sstore_wq);
+
+    return blob.size - bytes_not_copied;
 }
 
 static int sstore_ioctl(struct inode * inode, struct file * file, unsigned int cmd, unsigned long arg){

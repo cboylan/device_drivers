@@ -65,7 +65,7 @@ static void child_proc(){
 
     blob.size = sizeof(int);
     blob.index = 0;
-    blob.data = &next_index;
+    blob.data = (char *) &next_index;
 
     fd = Open(dev_file, O_RDWR);
 
@@ -79,7 +79,7 @@ static void child_proc(){
     blob.size = sizeof(int);
     blob.index = next_index;
     next_index++;
-    blob.data = &next_index;
+    blob.data = (char *) &next_index;
 
     count = Write(fd, &blob, sizeof(blob));
     if(count != sizeof(int)){
@@ -97,7 +97,7 @@ static void parent_proc(){
     blob.size = sizeof(int);
     blob.index = 0;
     next_index = blob.index + 1;
-    blob.data = &next_index;
+    blob.data = (char *) &next_index;
 
     fd = Open(dev_file, O_RDWR);
 
@@ -108,7 +108,7 @@ static void parent_proc(){
 
     blob.size = sizeof(int);
     blob.index = next_index;
-    blob.data = &next_index;
+    blob.data = (char *) &next_index;
 
     count = Read(fd, &blob, sizeof(blob));
     if(count != sizeof(int)){

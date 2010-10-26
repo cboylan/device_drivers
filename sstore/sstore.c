@@ -3,6 +3,7 @@
 #include <linux/device.h>
 #include <linux/moduleparam.h>
 #include <linux/wait.h>
+#include <linux/capability.h>
 #include <asm/uaccess.h>
 
 #include "sstore_kernel.h"
@@ -34,7 +35,9 @@ struct class * sstore_class;
 struct sstore_dev * sstore_devp[NUM_SSTORE_DEVICES];
 
 static int sstore_open(struct inode * inode, struct file * file){
-    /* TODO: Check that root is the user opening the file. */
+    if(!capable(CAP_SYS_ADMIN)){
+        return -EPERM;
+    }
 
     printk(KERN_DEBUG "sstore: file opened.\n");
     /* Tie the sstore_dev struct for this "file" with its file * */

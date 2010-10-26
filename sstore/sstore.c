@@ -76,7 +76,7 @@ static ssize_t sstore_read(struct file * file, char __user * buf, size_t lbuf, l
     mutex_lock(&devp->sstore_lock);
     while(devp->sstore_blobp[blob.index] == NULL){
         mutex_unlock(&devp->sstore_lock);
-        if(wait_event_interruptable(devp->sstore_wq, devp->sstore_blobp[blob.index] != NULL)){
+        if(wait_event_interruptible(devp->sstore_wq, devp->sstore_blobp[blob.index] != NULL)){
             return -ERESTARTSYS;
         }
         mutex_lock(&devp->sstore_lock);

@@ -35,14 +35,14 @@ int main(int argv, char ** argc){
         printf("Error opening dev file.\n");
     }
 
-    byte_count = write(fd, &blob, blob.size);
+    byte_count = write(fd, &blob, sizeof(struct sstore_blob));
     if(byte_count != blob.size){
         printf("Only %d bytes written.\n", byte_count);
     }
 
     strcpy(blob.data, "reset");
 
-    byte_count = read(fd, &blob, blob.size);
+    byte_count = read(fd, &blob, sizeof(struct sstore_blob));
     if(byte_count != blob.size){
         printf("Only %d bytes read.\n", byte_count);
     }

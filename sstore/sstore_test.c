@@ -72,7 +72,7 @@ static int read_int(const char * file_name){
         printf("Unable to read from %s.\n", file_name);
         return 1;
     } 
-    if(fscanf(fp, "%d\n", data) != 1){
+    if(fscanf(fp, "%d\n", &data) != 1){
         printf("Unable to read from %s.\n", file_name);
         return 1;
     }

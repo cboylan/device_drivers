@@ -10,7 +10,7 @@ static const char test_string[] = "Testing";
 static const char blob_size_loc[] = "/sys/module/sstore/parameters/blob_size";
 static const char num_blobs_loc[] = "/sys/module/sstore/parameters/num_of_blobs";
 
-static int read_int(file_name);
+static int read_int(const char * file_name);
 static int Open(const char * file_name, int flags);
 static int Close(int fd);
 ssize_t Read(int fd, void *buf, size_t count);

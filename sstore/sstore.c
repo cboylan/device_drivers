@@ -2,6 +2,8 @@
 #include <linux/init.h>
 #include <linux/device.h>
 #include <linux/moduleparam.h>
+#include <linux/wait.h>
+#include <asm/uaccess.h>
 
 #include "sstore_kernel.h"
 
@@ -79,7 +81,7 @@ static ssize_t sstore_read(struct file * file, char __user * buf, size_t lbuf, l
         }
         mutex_lock(&devp->sstore_lock);
     }
-    bytes_not_copied = copy_to_user(blob.data, devp->sstore_blobp[index]->data, blob.size);
+    bytes_not_copied = copy_to_user(blob.data, devp->sstore_blobp[blob.index]->data, blob.size);
     mutex_unlock(&devp->sstore_lock);
 
     return blob.size - bytes_not_copied;

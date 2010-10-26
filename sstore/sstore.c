@@ -36,6 +36,7 @@ struct sstore_dev * sstore_devp[NUM_SSTORE_DEVICES];
 static int sstore_open(struct inode * inode, struct file * file){
     /* TODO: Check that root is the user opening the file. */
 
+    printk(KERN_DEBUG "sstore: file opened.\n");
     /* Tie the sstore_dev struct for this "file" with its file * */
     file->private_data = container_of(inode->i_cdev, struct sstore_dev, cdev);
 
@@ -46,6 +47,7 @@ static int sstore_release(struct inode * inode, struct file * file){
     int i;
     struct sstore_dev * devp = file->private_data;
 
+    printk(KERN_DEBUG "sstore: file released.\n");
     for(i = 0; i < num_of_blobs; ++i){
         if(devp->sstore_blobp[i]){
             if(devp->sstore_blobp[i]->data){
@@ -84,6 +86,7 @@ static ssize_t sstore_read(struct file * file, char __user * buf, size_t lbuf, l
     bytes_not_copied = copy_to_user(blob.data, devp->sstore_blobp[blob.index]->data, blob.size);
     mutex_unlock(&devp->sstore_lock);
 
+    printk(KERN_DEBUG "sstore: Successful read.\n");
     return blob.size - bytes_not_copied;
 }
 
@@ -127,6 +130,7 @@ static ssize_t sstore_write(struct file * file, const char __user * buf, size_t 
 
     wake_up(&devp->sstore_wq);
 
+    printk(KERN_DEBUG "sstore: Successful write.\n");
     return blob.size - bytes_not_copied;
 }
 

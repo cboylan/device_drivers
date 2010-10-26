@@ -6,7 +6,11 @@ obj-m +=  sstore.o
 
 export KROOT=/lib/modules/2.6.24.7-test2/build
 
-allofit:   modules
+allofit:   modules sstore_test
+
+sstore_test: sstore_test.c
+	gcc sstore_test.c -o sstore_test
+
 modules:
 	@$(MAKE) -C $(KROOT) M=$(PWD) modules
 modules_install:

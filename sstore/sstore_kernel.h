@@ -2,6 +2,7 @@
 #include <linux/cdev.h>
 #include <linux/mutex.h>
 #include <linux/sched.h>
+#include <asm/atomic.h>
 
 #include "sstore_shared.h"
 
@@ -13,6 +14,7 @@ struct sstore_dev {
     struct sstore_blob ** sstore_blobp;
     int sstore_number;
     struct cdev cdev;
+    atomic_t open_count;
     struct mutex sstore_lock;
     wait_queue_head_t sstore_wq;
     char sstore_name[NAME_SIZE];

@@ -85,6 +85,8 @@ static void child_proc(){
     if(count != sizeof(int)){
         printf("Child: only %d bytes written.\n", count);
     }
+
+    Close(fd);
 }
 
 static void parent_proc(){
@@ -112,9 +114,11 @@ static void parent_proc(){
 
     count = Read(fd, &blob, sizeof(blob));
     if(count != sizeof(int)){
-        printf("Child: only %d bytes read.\n", count);
+        printf("Parent: only %d bytes read.\n", count);
     }
     printf("Parent: next index %d.\n", next_index);
+
+    Close(fd);
 
     wait(&status);
 }

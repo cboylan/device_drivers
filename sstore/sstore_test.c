@@ -64,7 +64,7 @@ int main(int argv, char ** argc){
     return 0;
 }
 
-static int read_int(file_name){
+static int read_int(const char * file_name){
     int data;
 
     FILE * fp = fopen(num_blobs_loc, "r");

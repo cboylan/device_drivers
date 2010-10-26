@@ -1,5 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
+#include <fcntl.h>
 
 #include "sstore_shared.h"
 
@@ -23,9 +25,9 @@ int main(int argv, char ** argc){
     data = (char *) malloc(blob_size);
     strcpy(data, test_string);
 
-    sstore_blob.size = strlen(test_string);
-    sstore_blob.index = 0;
-    sstore_blob.data = data;
+    blob.size = strlen(test_string);
+    blob.index = 0;
+    blob.data = data;
 
     fd = open("/dev/sstore0", O_RDWR);
     write(fd, &blob, blob.size);

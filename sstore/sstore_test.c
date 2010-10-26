@@ -46,8 +46,8 @@ int main(int argv, char ** argc){
     num_of_blobs = read_int(num_blobs_loc);
     blob_size = read_int(blob_size_loc);
 
-    pid_t = fork();
-    if(pid_t == 0){
+    child_pid = fork();
+    if(child_pid == 0){
         child_proc();
     }
     else{

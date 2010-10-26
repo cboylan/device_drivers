@@ -12,6 +12,7 @@ int main(int argv, char ** argc){
     int fd;
     int blob_size;
     int num_of_blobs;
+    int byte_count;
     char * data;
     struct sstore_blob blob;
 
@@ -30,10 +31,25 @@ int main(int argv, char ** argc){
     blob.data = data;
 
     fd = open("/dev/sstore0", O_RDWR);
-    write(fd, &blob, blob.size);
+    if(fd == -1){
+        printf("Error opening dev file.\n");
+    }
+
+    byte_count = write(fd, &blob, blob.size);
+    if(byte_count != blob.size){
+        printf("Only %d bytes written.\n", byte_count);
+    }
+
     strcpy(blob.data, "reset");
-    read(fd, &blob, blob.size);
-    close(fd);
+
+    byte_count = read(fd, &blob, blob.size);
+    if(byte_count != blob.size){
+        printf("Only %d bytes read.\n", byte_count);
+    }
+
+    if(close(fd) != 0){
+        printf("close() failed.\n");
+    }
 
     if(strcmp(blob.data, test_string) != 0){
         printf("Failure to read data out of kernel properly.\n");

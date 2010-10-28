@@ -41,12 +41,15 @@ static int sstore_open(struct inode * inode, struct file * file){
         return -EPERM;
     }
 
-    printk(KERN_DEBUG "sstore: file opened.\n");
     /* Tie the sstore_dev struct for this "file" with its file * */
     file->private_data = container_of(inode->i_cdev, struct sstore_dev, cdev);
 
     devp = file->private_data;
-    atomic_inc(&devp->open_count);
+    mutex_lock(&devp->sstore_lock);
+    devp->open_count++;
+    mutex_unlock(&devp->sstore_lock);
+
+    printk(KERN_DEBUG "sstore: file opened.\n");
 
     return 0;
 }
@@ -55,9 +58,9 @@ static int sstore_release(struct inode * inode, struct file * file){
     int i;
     struct sstore_dev * devp = file->private_data;
 
-    printk(KERN_DEBUG "sstore: file released.\n");
-
-    if(atomic_dec_and_test(&devp->open_count)){
+    mutex_lock(&devp->sstore_lock);
+    devp->open_count--;
+    if(devp->open_count == 0){
         for(i = 0; i < num_of_blobs; ++i){
             if(devp->sstore_blobp[i]){
                 if(devp->sstore_blobp[i]->data){
@@ -68,6 +71,9 @@ static int sstore_release(struct inode * inode, struct file * file){
             }
         }
     }
+    mutex_unlock(&devp->sstore_lock);
+
+    printk(KERN_DEBUG "sstore: file released.\n");
 
     return 0;
 }
@@ -184,6 +190,7 @@ static int __init sstore_init (void)
             return -ENOMEM;
         }
 
+        sstore_devp[i]->open_count = 0;
         sstore_devp[i]->sstore_number = i;
 
         sstore_devp[i]->sstore_blobp = kzalloc(num_of_blobs * sizeof(struct sstore_dev *), GFP_KERNEL);
@@ -192,8 +199,7 @@ static int __init sstore_init (void)
             return -ENOMEM;
         }
 
-        /* TODO: Init lock(s) */
-        atomic_set(&sstore_devp[i]->open_count, 0);
+        /* Init lock(s) */
         mutex_init(&sstore_devp[i]->sstore_lock);
         init_waitqueue_head(&sstore_devp[i]->sstore_wq);
 

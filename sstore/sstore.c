@@ -20,12 +20,12 @@ static ssize_t sstore_write(struct file *, const char __user *, size_t, loff_t *
 static int sstore_ioctl(struct inode *, struct file *, unsigned int, unsigned long);
 
 static struct file_operations sstore_fops = {
-    .owner   = THIS_MODULE,
-    .open    = sstore_open,
-    .release = sstore_release,
-    .read    = sstore_read,
-    .write   = sstore_write,
-    .ioctl   = sstore_ioctl,
+    .owner          = THIS_MODULE,
+    .open           = sstore_open,
+    .release        = sstore_release,
+    .read           = sstore_read,
+    .write          = sstore_write,
+    .unlocked_ioctl = sstore_ioctl,
 };
 
 static dev_t sstore_dev_number;
@@ -166,6 +166,27 @@ static ssize_t sstore_write(struct file * file, const char __user * buf, size_t 
 }
 
 static int sstore_ioctl(struct inode * inode, struct file * file, unsigned int cmd, unsigned long arg){
+    struct sstore_dev * devp = file->private_data;
+    if(cmd == SSTORE_DELETE){
+        mutex_lock(&devp->sstore_lock);
+        if(devp->sstore_blobp[arg]){
+            if(devp->sstore_blobp[arg]->data){
+                kfree(devp->sstore_blobp[arg]->data);
+            }
+            kfree(devp->sstore_blobp[arg]);
+            devp->sstore_blobp[arg] = NULL;
+            mutex_unlock(&devp->sstore_lock);
+        }
+        else{
+            mutex_unlock(&devp->sstore_lock);
+            return -EINVAL;
+        }
+    }
+    else{
+        return -EINVAL;
+    }
+
+    return 0;
 }
 
 static int __init sstore_init (void)

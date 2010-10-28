@@ -7,8 +7,9 @@
 #include "sstore_shared.h"
 
 #define NUM_SSTORE_DEVICES 2
-#define NAME_SIZE 8
 #define DEV_NAME "sstore"
+
+#define SSTORE_DELETE _IO(SSTORE_IOCTL_TYPE, 1)
 
 struct sstore_dev {
     struct sstore_blob ** sstore_blobp;
@@ -17,5 +18,4 @@ struct sstore_dev {
     int open_count;
     struct mutex sstore_lock;
     wait_queue_head_t sstore_wq;
-    char sstore_name[NAME_SIZE];
 };

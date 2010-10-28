@@ -17,7 +17,7 @@ static int sstore_open(struct inode *, struct file *);
 static int sstore_release(struct inode *, struct file *);
 static ssize_t sstore_read(struct file *, char __user *, size_t, loff_t *);
 static ssize_t sstore_write(struct file *, const char __user *, size_t, loff_t *);
-static int sstore_ioctl(struct inode *, struct file *, unsigned int, unsigned long);
+static int sstore_ioctl(struct file *, unsigned int, unsigned long);
 
 static struct file_operations sstore_fops = {
     .owner          = THIS_MODULE,
@@ -165,7 +165,7 @@ static ssize_t sstore_write(struct file * file, const char __user * buf, size_t 
     return blob.size - bytes_not_copied;
 }
 
-static int sstore_ioctl(struct inode * inode, struct file * file, unsigned int cmd, unsigned long arg){
+static int sstore_ioctl(struct file * file, unsigned int cmd, unsigned long arg){
     struct sstore_dev * devp = file->private_data;
     if(cmd == SSTORE_DELETE){
         mutex_lock(&devp->sstore_lock);

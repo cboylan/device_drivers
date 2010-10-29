@@ -1,0 +1,65 @@
+Script started on Fri 29 Oct 2010 02:27:57 PM PDT
+debian:/home/clark/repos/device_drivers/sstore# insmod sstore.ko num_of_blobs=64 blob_size=256
+debian:/home/clark/repos/device_drivers/sstore# lsmod
+Module                  Size  Used by
+sstore                  9624  0 
+e1000                 109504  0 
+debian:/home/clark/repos/device_drivers/sstore# cat /dev/sstore0
+cat: /dev/sstore0: Operation not permitted
+debian:/home/clark/repos/device_drivers/sstore# cat /dev/sstore1
+cat: /dev/sstore1: Operation not permitted
+debian:/home/clark/repos/device_drivers/sstore# cat /sys/module/sstore/parameters/num_of_blobs
+64
+debian:/home/clark/repos/device_drivers/sstore# cat /sys/module/sstore/parameters/blob_size
+256
+debian:/home/clark/repos/device_drivers/sstore# ./sstore_test /dev/sstore0 > sstore0_output &
+[1] 11342
+debian:/home/clark/repos/device_drivers/sstore# ./sstore_test /dev/sstore1 > sstore1_output &
+[2] 11345
+debian:/home/clark/repos/device_drivers/sstore# cat /proc/sstore/stats
+device opens reads writes deletes
+0 2 76696 76697 76696
+1 2 15751 15752 15751
+debian:/home/clark/repos/device_drivers/sstore# cat /r[Kproc/sstore/stats
+device opens reads writes deletes
+0 2 96512 96513 96512
+1 2 35319 35320 35319
+debian:/home/clark/repos/device_drivers/sstore# cat /proc/sstore/data
+a 4
+27 0 0 0 
+14 4
+2d 0 0 0 
+debian:/home/clark/repos/device_drivers/sstore# cat /proc/sstore/data
+31 4
+11 0 0 0 
+18 4
+1d 0 0 0 
+debian:/home/clark/repos/device_drivers/sstore# pkill sstore_test
+[1]-  Terminated              ./sstore_test /dev/sstore0 > sstore0_output
+[2]+  Terminated              ./sstore_test /dev/sstore1 > sstore1_output
+debian:/home/clark/repos/device_drivers/sstore# rr[Kmmod sstore
+debian:/home/clark/repos/device_drivers/sstore# tail -20 /var/log/ss[Kyslog
+Oct 29 14:31:44 debian kernel: sstore: Successful read.
+Oct 29 14:31:44 debian kernel: sstore: Successful delete.
+Oct 29 14:31:44 debian kernel: sstore: Successful write.
+Oct 29 14:31:44 debian kernel: sstore: file released.
+Oct 29 14:31:44 debian kernel: sstore: file opened.
+Oct 29 14:31:44 debian kernel: sstore: Successful read.
+Oct 29 14:31:44 debian kernel: sstore: Successful delete.
+Oct 29 14:31:44 debian kernel: sstore: file released.
+Oct 29 14:31:44 debian kernel: sstore: file opened.
+Oct 29 14:31:44 debian kernel: sstore: Successful write.
+Oct 29 14:31:44 debian kernel: sstore: Successful read.
+Oct 29 14:31:44 debian kernel: sstore: Successful delete.
+Oct 29 14:31:44 debian kernel: sstore: Successful write.
+Oct 29 14:31:44 debian kernel: sstore: file released.
+Oct 29 14:31:44 debian kernel: sstore: file opened.
+Oct 29 14:31:44 debian kernel: sstore: file released.
+Oct 29 14:31:44 debian kernel: sstore: file released.
+Oct 29 14:31:44 debian kernel: sstore: file released.
+Oct 29 14:31:44 debian kernel: sstore: file released.
+Oct 29 14:32:42 debian kernel: sstore: driver removed.
+debian:/home/clark/repos/device_drivers/sstore# exit
+exit
+
+Script done on Fri 29 Oct 2010 02:33:04 PM PDT

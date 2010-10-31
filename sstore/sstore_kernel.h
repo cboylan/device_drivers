@@ -18,6 +18,9 @@ struct sstore_dev {
     int sstore_number;
     struct cdev cdev;
     int open_count;
+    int read_count;
+    int write_count;
+    int del_count;
     struct mutex sstore_lock;
     wait_queue_head_t sstore_wq;
 };

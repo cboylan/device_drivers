@@ -112,6 +112,7 @@ static ssize_t sstore_read(struct file * file, char __user * buf, size_t lbuf, l
         mutex_lock(&devp->sstore_lock);
     }
     bytes_not_copied = copy_to_user(blob.data, devp->sstore_blobp[blob.index]->data, blob.size);
+    devp->read_count++;
     mutex_unlock(&devp->sstore_lock);
 
     printk(KERN_DEBUG "sstore: Successful read.\n");
@@ -165,6 +166,7 @@ static ssize_t sstore_write(struct file * file, const char __user * buf, size_t 
     devp->sstore_blobp[blob.index]->size = blob.size;
     devp->sstore_blobp[blob.index]->index = blob.index;
     devp->sstore_blobp[blob.index]->data = new_data;
+    devp->write_count++;
     mutex_unlock(&devp->sstore_lock);
 
     wake_up(&devp->sstore_wq);
@@ -184,6 +186,7 @@ static long sstore_ioctl(struct file * file, unsigned int cmd, unsigned long arg
             }
             kfree(devp->sstore_blobp[arg]);
             devp->sstore_blobp[arg] = NULL;
+            devp->del_count++;
             mutex_unlock(&devp->sstore_lock);
         }
         else{
@@ -239,7 +242,34 @@ static struct file_operations sstore_proc_data_fops = {
 
 int sstore_stats_read_proc(char * page, char **start, off_t off, int count, int *eof, void *data)
 {
-    return 0;
+    int i;
+    int length = 0;
+    int open_counts[NUM_SSTORE_DEVICES];
+    int read_counts[NUM_SSTORE_DEVICES];
+    int write_counts[NUM_SSTORE_DEVICES];
+    int del_counts[NUM_SSTORE_DEVICES];
+
+    for(i = 0; i < NUM_SSTORE_DEVICES; ++i){
+        mutex_lock(&sstore_devp[i]->sstore_lock);
+        open_counts[i] = sstore_devp[i]->open_count;
+        read_counts[i] = sstore_devp[i]->read_count;
+        write_counts[i] = sstore_devp[i]->write_count;
+        del_counts[i] = sstore_devp[i]->del_count;
+        mutex_unlock(&sstore_devp[i]->sstore_lock);
+    }
+
+    for(i = 0; i < NUM_SSTORE_DEVICES && length < count; ++i){
+        length += snprintf(page + length, count - length,
+                "sstore device %d\n"
+                "opens: %d\n"
+                "reads: %d\n"
+                "writes: %d\n"
+                "deletes: %d\n",
+                i, open_counts[i], read_counts[i], write_counts[i], del_counts[i], 
+                )
+    }
+
+    return length;
 }
 
 static int sstore_proc_init(void)
@@ -302,6 +332,9 @@ static int __init sstore_init (void)
         }
 
         sstore_devp[i]->open_count = 0;
+        sstore_devp[i]->read_count = 0;
+        sstore_devp[i]->write_count = 0;
+        sstore_devp[i]->del_count = 0;
         sstore_devp[i]->sstore_number = i;
 
         sstore_devp[i]->sstore_blobp = kzalloc(num_of_blobs * sizeof(struct sstore_dev *), GFP_KERNEL);

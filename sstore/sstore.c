@@ -207,11 +207,11 @@ void * sstore_seq_start(struct seq_file *m, loff_t *pos)
     int dev_num = int_pos / NUM_SSTORE_DEVICES;
     int index = int_pos % num_of_blobs;
 
+    printk(KERN_DEBUG "sstore: seq started at %d %d\n", dev_num, index);
+
     if(dev_num < NUM_SSTORE_DEVICES && index < num_of_blobs){
         return sstore_devp[dev_num]->sstore_blobp[index];
     }
-
-    printk(KERN_DEBUG "sstore: seq started at %d %d\n", dev_num, index);
 
     return NULL;
 }
@@ -227,11 +227,12 @@ void * sstore_seq_next(struct seq_file *m, void *v, loff_t *pos)
     dev_num = int_pos / NUM_SSTORE_DEVICES;
     index = int_pos % num_of_blobs;
 
+    printk(KERN_DEBUG "sstore: seq moved to %d %d\n", dev_num, index);
+
     if(dev_num < NUM_SSTORE_DEVICES && index < num_of_blobs){
         return sstore_devp[dev_num]->sstore_blobp[index];
     }
 
-    printk(KERN_DEBUG "sstore: seq moved to %d %d\n", dev_num, index);
     return NULL;
 }
 

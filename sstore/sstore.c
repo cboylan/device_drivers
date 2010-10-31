@@ -211,6 +211,8 @@ void * sstore_seq_start(struct seq_file *m, loff_t *pos)
         return sstore_devp[dev_num]->sstore_blobp[index];
     }
 
+    printk(KERN_DEBUG "sstore: seq started at %d %d\n", dev_num, index);
+
     return NULL;
 }
 
@@ -229,6 +231,7 @@ void * sstore_seq_next(struct seq_file *m, void *v, loff_t *pos)
         return sstore_devp[dev_num]->sstore_blobp[index];
     }
 
+    printk(KERN_DEBUG "sstore: seq moved to %d %d\n", dev_num, index);
     return NULL;
 }
 
@@ -244,6 +247,7 @@ int sstore_seq_show(struct seq_file *m, void *v)
         }
         seq_printf(m, "\n");
     }
+    printk(KERN_DEBUG "sstore: seq showed %d %d\n", dev_num, index);
 
     return 0;
 }

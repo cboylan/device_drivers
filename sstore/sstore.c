@@ -218,7 +218,7 @@ void * sstore_seq_next(struct seq_file *m, void *v, loff_t *pos)
     int dev_num;
     int index;
 
-    *pos++;
+    ++*pos;
     dev_num = *pos / NUM_SSTORE_DEVICES;
     index = *pos % num_of_blobs;
 
@@ -235,11 +235,11 @@ int sstore_seq_show(struct seq_file *m, void *v)
     struct sstore_blob * blobp = v;
 
     if(blobp){
-        seq_printf("%x %x\n", blobp->index, blobp->size);
+        seq_printf(m, "%x %x\n", blobp->index, blobp->size);
         for(i = 0; i < blobp->size; ++i){
-            seq_printf("%x ", blobp->data[i]);
+            seq_printf(m, "%x ", blobp->data[i]);
         }
-        seq_printf("\n");
+        seq_printf(m, "\n");
     }
 
     return 0;

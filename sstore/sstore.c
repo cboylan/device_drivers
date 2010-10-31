@@ -219,7 +219,7 @@ static struct seq_operations sstore_seq_ops = {
     .next = sstore_seq_next,
     .stop = sstore_seq_stop,
     .show = sstore_seq_show,
-}
+};
 
 static  int sstore_seq_open(struct inode * inode, struct file * file)
 {

@@ -203,8 +203,9 @@ static long sstore_ioctl(struct file * file, unsigned int cmd, unsigned long arg
 
 void * sstore_seq_start(struct seq_file *m, loff_t *pos)
 {
-    int dev_num = *pos / NUM_SSTORE_DEVICES;
-    int index = *pos % num_of_blobs;
+    int int_pos = *pos;
+    int dev_num = int_pos / NUM_SSTORE_DEVICES;
+    int index = int_pos % num_of_blobs;
 
     if(dev_num < NUM_SSTORE_DEVICES && index < num_of_blobs){
         return sstore_devp[dev_num]->sstore_blobp[index];
@@ -215,12 +216,14 @@ void * sstore_seq_start(struct seq_file *m, loff_t *pos)
 
 void * sstore_seq_next(struct seq_file *m, void *v, loff_t *pos)
 {
+    int int_pos;
     int dev_num;
     int index;
 
     ++*pos;
-    dev_num = *pos / NUM_SSTORE_DEVICES;
-    index = *pos % num_of_blobs;
+    int_pos = *pos;
+    dev_num = int_pos / NUM_SSTORE_DEVICES;
+    index = int_pos % num_of_blobs;
 
     if(dev_num < NUM_SSTORE_DEVICES && index < num_of_blobs){
         return sstore_devp[dev_num]->sstore_blobp[index];

@@ -8,6 +8,8 @@
 
 #define NUM_SSTORE_DEVICES 2
 #define DEV_NAME "sstore"
+#define STATS_NAME "stats"
+#define DATA_NAME "data"
 
 #define SSTORE_DELETE _IO(SSTORE_IOCTL_TYPE, 1)
 

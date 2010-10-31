@@ -4,6 +4,8 @@
 #include <linux/moduleparam.h>
 #include <linux/wait.h>
 #include <linux/capability.h>
+#include <linux/stat.h>
+#include <linux/proc_fs.h>
 #include <asm/uaccess.h>
 
 #include "sstore_kernel.h"
@@ -31,10 +33,12 @@ static struct file_operations sstore_fops = {
 static dev_t sstore_dev_number;
 static dev_t sstore_major = 0;
 static dev_t sstore_minor = 0;
-struct class * sstore_class;
-struct sstore_dev * sstore_devp[NUM_SSTORE_DEVICES];
+static struct class * sstore_class;
+static struct sstore_dev * sstore_devp[NUM_SSTORE_DEVICES];
+static struct proc_dir_entry * proc_dir = NULL;
 
-static int sstore_open(struct inode * inode, struct file * file){
+static int sstore_open(struct inode * inode, struct file * file)
+{
     struct sstore_dev * devp;
 
     if(!capable(CAP_SYS_ADMIN)){
@@ -54,7 +58,8 @@ static int sstore_open(struct inode * inode, struct file * file){
     return 0;
 }
 
-static int sstore_release(struct inode * inode, struct file * file){
+static int sstore_release(struct inode * inode, struct file * file)
+{
     int i;
     struct sstore_dev * devp = file->private_data;
 
@@ -78,7 +83,8 @@ static int sstore_release(struct inode * inode, struct file * file){
     return 0;
 }
 
-static ssize_t sstore_read(struct file * file, char __user * buf, size_t lbuf, loff_t * ppos){
+static ssize_t sstore_read(struct file * file, char __user * buf, size_t lbuf, loff_t * ppos)
+{
     int bytes_not_copied = 0;
     struct sstore_blob blob;
     struct sstore_dev * devp = file->private_data;
@@ -111,7 +117,8 @@ static ssize_t sstore_read(struct file * file, char __user * buf, size_t lbuf, l
     return blob.size - bytes_not_copied;
 }
 
-static ssize_t sstore_write(struct file * file, const char __user * buf, size_t lbuf, loff_t * ppos){
+static ssize_t sstore_write(struct file * file, const char __user * buf, size_t lbuf, loff_t * ppos)
+{
     int bytes_not_copied = 0;
     struct sstore_blob blob;
     struct sstore_blob * blobp;
@@ -165,7 +172,8 @@ static ssize_t sstore_write(struct file * file, const char __user * buf, size_t 
     return blob.size - bytes_not_copied;
 }
 
-static long sstore_ioctl(struct file * file, unsigned int cmd, unsigned long arg){
+static long sstore_ioctl(struct file * file, unsigned int cmd, unsigned long arg)
+{
     struct sstore_dev * devp = file->private_data;
     if(cmd == SSTORE_DELETE){
         mutex_lock(&devp->sstore_lock);
@@ -187,6 +195,85 @@ static long sstore_ioctl(struct file * file, unsigned int cmd, unsigned long arg
     }
 
     return 0;
+}
+
+void * sstore_seq_start(struct seq_file *m, loff_t *pos)
+{
+}
+
+void * sstore_seq_next(struct seq_file *m, void *v, loff_t *pos)
+{
+}
+
+void * sstore_seq_stop(struct seq_file *m, void *v)
+{
+}
+
+int sstore_seq_show(struct seq_file *m, void *v)
+{
+    return 0;
+}
+
+static struct seq_operations sstore_seq_ops = {
+    .start = sstore_seq_start,
+    .next = sstore_seq_next,
+    .stop = sstore_seq_stop,
+    .show = sstore_seq_show,
+}
+
+static  int sstore_seq_open(struct inode * inode, struct file * file)
+{
+    return seq_open(file, &sstore_seq_ops);
+}
+
+static struct file_operations sstore_proc_data_fops = {
+    .owner = THIS_MODULE,
+    .open = sstore_seq_open,
+    .read = seq_read,
+    .llseek = seq_lseek,
+    .release = seq_release,
+};
+
+int sstore_stats_read_proc(char * page, char **start, off_t off, int count, int *eof, void *data)
+{
+    return 0;
+}
+
+static int sstore_proc_init(void)
+{
+    int rv = 0;
+    struct proc_dir_entry * sstore_proc_stats = NULL;
+    struct proc_dir_entry * sstore_proc_data = NULL;
+
+    sstore_proc_dir = proc_mkdir(DEV_NAME, NULL);
+    if(sstore_proc_dir == NULL){
+        rv = -ENOMEM;
+        goto out;
+    }
+
+    sstore_proc_stats = create_proc_read_entry(STATS_NAME, S_IRUSER, sstore_proc_dir, sstore_stats_read_proc, NULL);
+    if(sstore_proc_stats == NULL){
+        rv = -ENOMEM;
+        goto no_stats;
+    }
+    sstore_proc_stats->owner = THIS_MODULE;
+
+    sstore_proc_data = create_proc_entry(DATA_NAME, S_IRUSER, sstore_proc_dir);
+    if(sstore_proc_data == NULL){
+        rv = -ENOMEM;
+        goto no_data;
+    }
+    sstore_proc_data->owner = THIS_MODULE;
+    sstore_proc_data->proc_fops = &sstore_proc_data_fops;
+
+    return 0;
+
+no_data:
+    remove_proc_entry(STATS_NAME, sstore_proc_dir);
+no_stats:
+    remove_proc_entry(DEV_NAME, NULL);
+out:
+    return rv;
 }
 
 static int __init sstore_init (void)
@@ -238,6 +325,8 @@ static int __init sstore_init (void)
         /* Send uevents to udev, so it'll create /dev nodes */
         device_create(sstore_class, NULL, MKDEV(sstore_major, sstore_minor + i), "sstore%d", i);
     }
+    
+    sstore_proc_init();
 
     printk(KERN_INFO "sstore: driver initialized.\n");
     return 0;
@@ -260,6 +349,11 @@ static void __exit sstore_exit (void)
 
     /* Destroy sstore_class */
     class_destroy(sstore_class);
+
+    /* Remove procfs entries */
+    remove_proc_entry(STATS_NAME, sstore_proc_dir);
+    remove_proc_entry(DATA_NAME, sstore_proc_dir);
+    remove_proc_entry(DEV_NAME, NULL);
 
     printk(KERN_INFO "sstore: driver removed.\n");
     return;

@@ -36,7 +36,7 @@ static dev_t sstore_major = 0;
 static dev_t sstore_minor = 0;
 static struct class * sstore_class;
 static struct sstore_dev * sstore_devp[NUM_SSTORE_DEVICES];
-static struct proc_dir_entry * proc_dir = NULL;
+static struct proc_dir_entry * sstore_proc_dir = NULL;
 
 static int sstore_open(struct inode * inode, struct file * file)
 {
@@ -254,14 +254,14 @@ static int sstore_proc_init(void)
         goto out;
     }
 
-    sstore_proc_stats = create_proc_read_entry(STATS_NAME, S_IRUSER, sstore_proc_dir, sstore_stats_read_proc, NULL);
+    sstore_proc_stats = create_proc_read_entry(STATS_NAME, S_IRUSR, sstore_proc_dir, sstore_stats_read_proc, NULL);
     if(sstore_proc_stats == NULL){
         rv = -ENOMEM;
         goto no_stats;
     }
     sstore_proc_stats->owner = THIS_MODULE;
 
-    sstore_proc_data = create_proc_entry(DATA_NAME, S_IRUSER, sstore_proc_dir);
+    sstore_proc_data = create_proc_entry(DATA_NAME, S_IRUSR, sstore_proc_dir);
     if(sstore_proc_data == NULL){
         rv = -ENOMEM;
         goto no_data;

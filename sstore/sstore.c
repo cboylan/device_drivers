@@ -247,7 +247,7 @@ int sstore_seq_show(struct seq_file *m, void *v)
         }
         seq_printf(m, "\n");
     }
-    printk(KERN_DEBUG "sstore: seq showed %d %d\n", dev_num, index);
+    printk(KERN_DEBUG "sstore: seq showed\n");
 
     return 0;
 }

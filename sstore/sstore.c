@@ -210,7 +210,8 @@ void * sstore_seq_start(struct seq_file *m, loff_t *pos)
     printk(KERN_DEBUG "sstore: seq started at %d %d\n", dev_num, index);
 
     if(dev_num < NUM_SSTORE_DEVICES && index < num_of_blobs){
-        return sstore_devp[dev_num]->sstore_blobp[index];
+        mutex_lock(&sstore_devp[dev_num]->sstore_lock);
+        return &sstore_devp[dev_num]->sstore_blobp[index];
     }
 
     return NULL;
@@ -218,9 +219,11 @@ void * sstore_seq_start(struct seq_file *m, loff_t *pos)
 
 void * sstore_seq_next(struct seq_file *m, void *v, loff_t *pos)
 {
-    int int_pos;
-    int dev_num;
-    int index;
+    int int_pos = *pos;
+    int dev_num = int_pos / NUM_SSTORE_DEVICES;
+    int index = int_pos % num_of_blobs;
+
+    mutex_unlock(&sstore_devp[dev_num]->sstore_lock);
 
     ++*pos;
     int_pos = *pos;
@@ -230,7 +233,8 @@ void * sstore_seq_next(struct seq_file *m, void *v, loff_t *pos)
     printk(KERN_DEBUG "sstore: seq moved to %d %d\n", dev_num, index);
 
     if(dev_num < NUM_SSTORE_DEVICES && index < num_of_blobs){
-        return sstore_devp[dev_num]->sstore_blobp[index];
+        mutex_lock(&sstore_devp[dev_num]->sstore_lock);
+        return &sstore_devp[dev_num]->sstore_blobp[index];
     }
 
     return NULL;
@@ -239,12 +243,12 @@ void * sstore_seq_next(struct seq_file *m, void *v, loff_t *pos)
 int sstore_seq_show(struct seq_file *m, void *v)
 {
     int i;
-    struct sstore_blob * blobp = v;
+    struct sstore_blob ** blobp = v;
 
-    if(blobp){
-        seq_printf(m, "%x %x\n", blobp->index, blobp->size);
-        for(i = 0; i < blobp->size; ++i){
-            seq_printf(m, "%x ", blobp->data[i]);
+    if(*blobp){
+        seq_printf(m, "%x %x\n", *blobp->index, *blobp->size);
+        for(i = 0; i < *blobp->size; ++i){
+            seq_printf(m, "%x ", *blobp->data[i]);
         }
         seq_printf(m, "\n");
     }

@@ -225,7 +225,7 @@ void * sstore_seq_next(struct seq_file *m, void *v, loff_t *pos)
 
     mutex_unlock(&sstore_devp[dev_num]->sstore_lock);
 
-    ++*pos;
+    (*pos)++;
     int_pos = *pos;
     dev_num = int_pos / NUM_SSTORE_DEVICES;
     index = int_pos % num_of_blobs;
@@ -246,9 +246,9 @@ int sstore_seq_show(struct seq_file *m, void *v)
     struct sstore_blob ** blobp = v;
 
     if(*blobp){
-        seq_printf(m, "%x %x\n", *blobp->index, *blobp->size);
-        for(i = 0; i < *blobp->size; ++i){
-            seq_printf(m, "%x ", *blobp->data[i]);
+        seq_printf(m, "%x %x\n", (*blobp)->index, (*blobp)->size);
+        for(i = 0; i < (*blobp)->size; ++i){
+            seq_printf(m, "%x ", (*blobp)->data[i]);
         }
         seq_printf(m, "\n");
     }

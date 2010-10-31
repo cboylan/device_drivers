@@ -204,7 +204,7 @@ static long sstore_ioctl(struct file * file, unsigned int cmd, unsigned long arg
 void * sstore_seq_start(struct seq_file *m, loff_t *pos)
 {
     int int_pos = *pos;
-    int dev_num = int_pos / NUM_SSTORE_DEVICES;
+    int dev_num = int_pos / num_of_blobs;
     int index = int_pos % num_of_blobs;
 
     printk(KERN_DEBUG "sstore: seq started at %d %d\n", dev_num, index);
@@ -220,14 +220,14 @@ void * sstore_seq_start(struct seq_file *m, loff_t *pos)
 void * sstore_seq_next(struct seq_file *m, void *v, loff_t *pos)
 {
     int int_pos = *pos;
-    int dev_num = int_pos / NUM_SSTORE_DEVICES;
+    int dev_num = int_pos / num_of_blobs;
     int index = int_pos % num_of_blobs;
 
     mutex_unlock(&sstore_devp[dev_num]->sstore_lock);
 
     (*pos)++;
     int_pos = *pos;
-    dev_num = int_pos / NUM_SSTORE_DEVICES;
+    dev_num = int_pos / num_of_blobs;
     index = int_pos % num_of_blobs;
 
     printk(KERN_DEBUG "sstore: seq moved to %d %d\n", dev_num, index);

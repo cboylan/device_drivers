@@ -258,13 +258,10 @@ int sstore_stats_read_proc(char * page, char **start, off_t off, int count, int 
         mutex_unlock(&sstore_devp[i]->sstore_lock);
     }
 
+    length += snprintf(page + length, count - length, "device opens reads writes deletes\n");
     for(i = 0; i < NUM_SSTORE_DEVICES && length < count; ++i){
         length += snprintf(page + length, count - length,
-                "sstore device %d\n"
-                "opens: %d\n"
-                "reads: %d\n"
-                "writes: %d\n"
-                "deletes: %d\n",
+                "%d %d %d %d %d\n",
                 i, open_counts[i], read_counts[i], write_counts[i], del_counts[i] 
                 );
     }

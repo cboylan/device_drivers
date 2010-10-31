@@ -203,21 +203,51 @@ static long sstore_ioctl(struct file * file, unsigned int cmd, unsigned long arg
 
 void * sstore_seq_start(struct seq_file *m, loff_t *pos)
 {
+    int dev_num = *pos / NUM_SSTORE_DEVICES;
+    int index = *pos % num_of_blobs;
+
+    if(dev_num < NUM_SSTORE_DEVICES && index < num_of_blobs){
+        return sstore_devp[dev_num]->sstore_blobp[index];
+    }
+
     return NULL;
 }
 
 void * sstore_seq_next(struct seq_file *m, void *v, loff_t *pos)
 {
-    return NULL;
-}
+    int dev_num;
+    int index;
 
-void sstore_seq_stop(struct seq_file *m, void *v)
-{
+    *pos++;
+    dev_num = *pos / NUM_SSTORE_DEVICES;
+    index = *pos % num_of_blobs;
+
+    if(dev_num < NUM_SSTORE_DEVICES && index < num_of_blobs){
+        return sstore_devp[dev_num]->sstore_blobp[index];
+    }
+
+    return NULL;
 }
 
 int sstore_seq_show(struct seq_file *m, void *v)
 {
+    int i;
+    struct sstore_blob * blobp = v;
+
+    if(blobp){
+        seq_printf("%x %x\n", blobp->index, blobp->size);
+        for(i = 0; i < blobp->size; ++i){
+            seq_printf("%x ", blobp->data[i]);
+        }
+        seq_printf("\n");
+    }
+
     return 0;
+}
+
+void sstore_seq_stop(struct seq_file *m, void *v)
+{
+    /* No cleanup necessary */
 }
 
 static struct seq_operations sstore_seq_ops = {
@@ -266,6 +296,7 @@ int sstore_stats_read_proc(char * page, char **start, off_t off, int count, int 
                 );
     }
 
+    *eof = 1;
     return length;
 }
 

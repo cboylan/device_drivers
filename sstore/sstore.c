@@ -6,6 +6,7 @@
 #include <linux/capability.h>
 #include <linux/stat.h>
 #include <linux/proc_fs.h>
+#include <linux/seq_file.h>
 #include <asm/uaccess.h>
 
 #include "sstore_kernel.h"
@@ -199,13 +200,15 @@ static long sstore_ioctl(struct file * file, unsigned int cmd, unsigned long arg
 
 void * sstore_seq_start(struct seq_file *m, loff_t *pos)
 {
+    return NULL;
 }
 
 void * sstore_seq_next(struct seq_file *m, void *v, loff_t *pos)
 {
+    return NULL;
 }
 
-void * sstore_seq_stop(struct seq_file *m, void *v)
+void sstore_seq_stop(struct seq_file *m, void *v)
 {
 }
 

@@ -265,8 +265,8 @@ int sstore_stats_read_proc(char * page, char **start, off_t off, int count, int 
                 "reads: %d\n"
                 "writes: %d\n"
                 "deletes: %d\n",
-                i, open_counts[i], read_counts[i], write_counts[i], del_counts[i], 
-                )
+                i, open_counts[i], read_counts[i], write_counts[i], del_counts[i] 
+                );
     }
 
     return length;

@@ -67,7 +67,7 @@ static void child_proc(){
     struct sstore_blob blob;
 
     gettimeofday(&tv, NULL);
-    srand(tv.usec);
+    srand(tv.tv_usec);
 
     blob.size = sizeof(int);
     blob.index = 0;
@@ -111,7 +111,7 @@ static void parent_proc(){
     struct sstore_blob blob;
 
     gettimeofday(&tv, NULL);
-    srand(tv.usec);
+    srand(tv.tv_usec);
 
     blob.size = sizeof(int);
     blob.index = 0;

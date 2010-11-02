@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <fcntl.h>
+#include <sys/time.h>
 
 #include "sstore_shared.h"
 
@@ -60,65 +61,88 @@ int main(int argv, char ** argc){
 static void child_proc(){
     int fd;
     int count;
-    int next_index;
+    int read_index;
+    int rand_index;
+    struct timeval tv;
     struct sstore_blob blob;
+
+    gettimeofday(&tv, NULL);
+    srand(tv.usec);
 
     blob.size = sizeof(int);
     blob.index = 0;
-    blob.data = (char *) &next_index;
+    blob.data = (char *) &read_index;
 
-    fd = Open(dev_file, O_RDWR);
+    while(1){
+        fd = Open(dev_file, O_RDWR);
 
-    count = Read(fd, &blob, sizeof(blob));
-    if(count != sizeof(int)){
-        printf("Child: only %d bytes read.\n", count);
+        count = Read(fd, &blob, sizeof(blob));
+        if(count != sizeof(int)){
+            printf("Child: only %d bytes read.\n", count);
+        }
+
+        printf("Child: next index %d.\n", read_index);
+
+        blob.size = sizeof(int);
+        blob.index = read_index;
+        while((rand_index = rand() % num_of_blobs) == read_index);
+        blob.data = (char *) &rand_index;
+
+        count = Write(fd, &blob, sizeof(blob));
+        if(count != sizeof(int)){
+            printf("Child: only %d bytes written.\n", count);
+        }
+
+        Close(fd);
+
+        blob.size = sizeof(int);
+        blob.index = rand_index;
+        blob.data = (char *) &read_index;
     }
-
-    printf("Child: next index %d.\n", next_index);
-
-    blob.size = sizeof(int);
-    blob.index = next_index;
-    next_index++;
-    blob.data = (char *) &next_index;
-
-    count = Write(fd, &blob, sizeof(blob));
-    if(count != sizeof(int)){
-        printf("Child: only %d bytes written.\n", count);
-    }
-
-    Close(fd);
 }
 
 static void parent_proc(){
     int fd;
     int count;
-    int next_index;
+    int read_index;
+    int rand_index;
     int status;
+    struct timeval tv;
     struct sstore_blob blob;
+
+    gettimeofday(&tv, NULL);
+    srand(tv.usec);
 
     blob.size = sizeof(int);
     blob.index = 0;
-    next_index = blob.index + 1;
-    blob.data = (char *) &next_index;
+    while((rand_index = rand() % num_of_blobs) == read_index);
+    blob.data = (char *) &rand_index;
 
-    fd = Open(dev_file, O_RDWR);
+    while(1){
+        fd = Open(dev_file, O_RDWR);
 
-    count = Write(fd, &blob, sizeof(blob));
-    if(count != sizeof(int)){
-        printf("Parent: only %d bytes written.\n", count);
+        count = Write(fd, &blob, sizeof(blob));
+        if(count != sizeof(int)){
+            printf("Parent: only %d bytes written.\n", count);
+        }
+
+        blob.size = sizeof(int);
+        blob.index = rand_index;
+        blob.data = (char *) &read_index;
+
+        count = Read(fd, &blob, sizeof(blob));
+        if(count != sizeof(int)){
+            printf("Parent: only %d bytes read.\n", count);
+        }
+        printf("Parent: next index %d.\n", read_index);
+
+        Close(fd);
+
+        blob.size = sizeof(int);
+        blob.index = read_index;
+        while((rand_index = rand() % num_of_blobs) == read_index);
+        blob.data = (char *) &rand_index;
     }
-
-    blob.size = sizeof(int);
-    blob.index = next_index;
-    blob.data = (char *) &next_index;
-
-    count = Read(fd, &blob, sizeof(blob));
-    if(count != sizeof(int)){
-        printf("Parent: only %d bytes read.\n", count);
-    }
-    printf("Parent: next index %d.\n", next_index);
-
-    Close(fd);
 
     wait(&status);
 }

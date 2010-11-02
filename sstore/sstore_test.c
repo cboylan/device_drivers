@@ -19,7 +19,7 @@
 
 #include "sstore_shared.h"
 
-#define SSTORE_IOCTL ('k' | (1 << 8))
+#define SSTORE_IOCTL (1 | (SSTORE_IOCTL_TYPE << 8))
 
 static const int number_of_args = 2;
 static int blob_size;

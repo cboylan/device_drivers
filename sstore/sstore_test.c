@@ -13,10 +13,13 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <stropts.h>
 #include <fcntl.h>
 #include <sys/time.h>
 
 #include "sstore_shared.h"
+
+#define SSTORE_IOCTL ('k' | (1 << 8))
 
 static const int number_of_args = 2;
 static int blob_size;
@@ -80,6 +83,9 @@ static void child_proc(){
         if(count != sizeof(int)){
             printf("Child: only %d bytes read.\n", count);
         }
+        if(ioctl(fd, SSTORE_IOCTL, blob.index) != 0){
+            printf("IOCTL delete on index %d failed.\n", blob.index);
+        }
 
         printf("Child: next index %d.\n", read_index);
 
@@ -136,6 +142,10 @@ static void parent_proc(){
         if(count != sizeof(int)){
             printf("Parent: only %d bytes read.\n", count);
         }
+        if(ioctl(fd, SSTORE_IOCTL, blob.index) != 0){
+            printf("IOCTL delete on index %d failed.\n", blob.index);
+        }
+
         printf("Parent: next index %d.\n", read_index);
 
         Close(fd);

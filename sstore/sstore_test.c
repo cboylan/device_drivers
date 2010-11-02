@@ -88,6 +88,7 @@ static void child_proc(){
         while((rand_index = rand() % num_of_blobs) == read_index);
         blob.data = (char *) &rand_index;
 
+        printf("Child: writing %d to index %d.\n", rand_index, blob.index);
         count = Write(fd, &blob, sizeof(blob));
         if(count != sizeof(int)){
             printf("Child: only %d bytes written.\n", count);
@@ -121,6 +122,7 @@ static void parent_proc(){
     while(1){
         fd = Open(dev_file, O_RDWR);
 
+        printf("Parent: writing %d to index %d.\n", rand_index, blob.index);
         count = Write(fd, &blob, sizeof(blob));
         if(count != sizeof(int)){
             printf("Parent: only %d bytes written.\n", count);

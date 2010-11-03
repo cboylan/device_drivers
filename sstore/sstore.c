@@ -456,10 +456,11 @@ no_proc_files:
         device_destroy (sstore_class, MKDEV(sstore_major, sstore_minor + i));
         cdev_del(&sstore_devp[i]->cdev);
 no_cdev_connection:
-        kfree(sstore_devp[i]->sstore_blob);
+        kfree(sstore_devp[i]->sstore_blobp);
 no_blobs:
         kfree(sstore_devp[i]);
 no_devs:
+        continue;
     }
 
     class_destroy(sstore_class);

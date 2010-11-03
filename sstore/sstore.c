@@ -199,6 +199,9 @@ static long sstore_ioctl(struct file * file,
 {
     struct sstore_dev * devp = file->private_data;
     if(cmd == SSTORE_DELETE){
+        if(arg >= num_of_blobs){
+            return -EINVAL;
+        }
         mutex_lock(&devp->sstore_lock);
         if(devp->sstore_blobp[arg]){
             if(devp->sstore_blobp[arg]->data){

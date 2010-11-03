@@ -1,3 +1,10 @@
+### Clark Boylan
+### CS 572
+### Homework 1
+### sstore driver
+### Makefile
+### 11/03/2010
+
 ### Automatic Makefile generation by 'genmake' script        ####
 ### Copyright, Jerry Cooperstein, coop@linuxfoundation.org 2/2003 - 11/2009 ####
 ### License: GPLv2 ###
@@ -19,4 +26,4 @@ kernel_clean:
 	@$(MAKE) -C $(KROOT) M=$(PWD) clean
 
 clean: kernel_clean
-	rm -rf   Module.symvers modules.order
+	rm -rf   Module.symvers modules.order sstore_test

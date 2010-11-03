@@ -1,0 +1,50 @@
+Clark Boylan
+CS 572
+Homework 1
+sstore driver
+README
+11/03/2010
+
+The sstore driver provides two simple devices that can be used for rudimentary
+data storage in the linux kernel or for simple inter process communications.
+The sstore devices can only be accessed by root.
+
+Using the Sstore Driver
+
+The sstore driver supports two module parameters, num_of_blobs (the number of
+supported blobs) and blob_size (the maximum size for the data portion of a
+blob). Loading the driver module will create two devices, /dev/sstore0 and
+/dev/sstore1. These two devices support three basic operations, read, write and
+delete.
+
+Read and write are supported through read(2) and write(2) calls made on the
+devices. The sstore devices use a protocol for read and write calls made
+this way. Calls to read(2) and write(2) expect a pointer to a
+	struct sstore_blob {
+		int size;
+		int index;
+		char * data;
+	};
+as their buf argument with size indicating the size of data, index indicating
+the blob index to read or write to, and data pointing to a preallocted region
+of user buffer space. On a call to read(2) the device will copy up to size bytes
+of its data at the specified index into the buffer indicated in the read(2) buf
+argument. A call to write(2) will copy up to size bytes of the specified buffer
+to the given blob index for later retrieval. Read calls will block if data is
+currently unavailable. Write calls will overwrite and previously held data at
+the specified index. The count arguments to read(2) and write(2) should be
+sizeof(sstore_blob) and not the size of the data buffer.
+
+Blob deletion is performed through an ioctl(2) command on the sstore devices.
+The command to delete is (1 | ('k' << 8)) and the ioctl(2) arg argument should
+contain the index of the blob to delete. ioctl() will return an error if you
+attempt to delete an invalid index.
+
+In addition to operations on the two devices the driver also provides driver
+information through procfs. The driver creates two files, /proc/sstore/stats
+and /proc/sstore/data. Cating /proc/sstore/stats will print statistics for each
+device (number of opens, reads, writes and deletes). Cating /proc/sstore/data
+will print the index, size, and data of any currently valid blobs in hex. The
+format this information is printed in is:
+	index size
+	data (first byte through last byte)

@@ -1,0 +1,36 @@
+Clark Boylan
+CS 572
+Homework 1
+sstore driver
+test_plan.txt
+11/03/2010
+
+Basic testing is done by insmod'ing the module then querying lsmod to ensure the
+module loaded properly. Next we can try to cat the two device files,
+/dev/sstore0 and /dev/sstore1. These cat processes should fail. Next we can
+query sysfs to ensure the module parameters were loaded properly. Cat
+/sys/module/sstore/parameters/blob_size and
+/sys/module/sstore/parameters/num_of_blobs and verify the file contents.
+
+This basic testing is nice because it is easy to do, but it is not very
+vigorous. Better testing is implemented in sstore_test.c. This program forks
+then uses an sstore device as a way to do interprocess communication. The parent
+writes a random index number to blob 0 then the child reads that random index
+number from blob 0. The child then deletes blob zero. Next the child writes a
+new random index to the blob at the first random index. The parent then reads
+that new index and writes a new random index to it and so on (this is done in a
+while true loop). Basically the parent and child process do pairs of reads and
+writes to a single sstore device. While doing so they open and close the device,
+read and write to the device, and run the delete ioctl command on the device.
+Doing this verifies that the operations work and that they work under load.
+
+While the sstore_test processes are running we can cat the procfs files that
+this driver creates. Cat /proc/sstore/stats several times to see the number of
+reads, writes, and deletes increase. Cat /proc/sstore/data to see a snapshot of
+the current data in the sstore devices.
+
+The last thing we will test is that the driver removes itself properly. Run
+rmmod sstore and very it does not fail. We can tail -20 /var/log/syslog to see
+the sstore debug printfs and verify that the module was removed.
+
+Please see the typescript file for a record of this testing.

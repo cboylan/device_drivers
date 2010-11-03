@@ -1,15 +1,21 @@
-/*
+/* Clark Boylan
+   CS 572
+   Homework 1
+   sstore driver
+   sstore_test.c
+   11/03/2010
+
    Test "suite" for the sstore driver.
    Test Plan:
    Fork
-   Parent writes to index. Write contains next index.
-   Child reads from index. Read next index.
-   Parent reads from next index.
-   Child writes to next index.
-   Child exits.
-   Parent uses ictl to delete two indices.
-   Parent exits.
- */
+   while True do:
+    Parent writes to index. Write contains next random index.
+    Child reads from index. Read next index.
+    Child uses ioctl to delete index read from.
+    Child writes next random index to index read.
+    Parent reads from next index from index given to its child.
+    Parent uses ictl to delete index read from. */
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -28,7 +34,8 @@ static int num_of_blobs;
 static const char test_string[] = "Testing";
 static char * dev_file;
 static const char blob_size_loc[] = "/sys/module/sstore/parameters/blob_size";
-static const char num_blobs_loc[] = "/sys/module/sstore/parameters/num_of_blobs";
+static const char num_blobs_loc[] =
+    "/sys/module/sstore/parameters/num_of_blobs";
 
 static void child_proc();
 static void parent_proc();
@@ -42,7 +49,8 @@ int main(int argv, char ** argc){
     pid_t child_pid;
 
     if(argv < number_of_args){
-        printf("Wrong number of arguments. Need %d arguments.\n", number_of_args);
+        printf("Wrong number of arguments. Need %d arguments.\n",
+                number_of_args);
         return 1;
     }
     dev_file = argc[1];

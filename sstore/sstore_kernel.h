@@ -1,3 +1,10 @@
+/* Clark Boylan
+   CS 572
+   Homework 1
+   sstore driver
+   sstore_kernel.h
+   11/03/2010 */
+
 #include <linux/fs.h>
 #include <linux/cdev.h>
 #include <linux/mutex.h>

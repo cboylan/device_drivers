@@ -1,3 +1,10 @@
+/* Clark Boylan
+   CS 572
+   Homework 1
+   sstore driver
+   sstore.c
+   11/03/2010 */
+
 #include <linux/module.h>
 #include <linux/init.h>
 #include <linux/device.h>
@@ -19,7 +26,8 @@ module_param(blob_size, uint, S_IRUGO);
 static int sstore_open(struct inode *, struct file *);
 static int sstore_release(struct inode *, struct file *);
 static ssize_t sstore_read(struct file *, char __user *, size_t, loff_t *);
-static ssize_t sstore_write(struct file *, const char __user *, size_t, loff_t *);
+static ssize_t sstore_write(struct file *,
+        const char __user *, size_t, loff_t *);
 static long sstore_ioctl(struct file *, unsigned int, unsigned long);
 
 static struct file_operations sstore_fops = {
@@ -66,6 +74,8 @@ static int sstore_release(struct inode * inode, struct file * file)
 
     mutex_lock(&devp->sstore_lock);
     devp->open_count--;
+
+    /* If the device is no longer opened free all allocated blobs. */
     if(devp->open_count == 0){
         for(i = 0; i < num_of_blobs; ++i){
             if(devp->sstore_blobp[i]){
@@ -84,7 +94,8 @@ static int sstore_release(struct inode * inode, struct file * file)
     return 0;
 }
 
-static ssize_t sstore_read(struct file * file, char __user * buf, size_t lbuf, loff_t * ppos)
+static ssize_t sstore_read(struct file * file,
+        char __user * buf, size_t lbuf, loff_t * ppos)
 {
     int bytes_not_copied = 0;
     struct sstore_blob blob;
@@ -103,15 +114,18 @@ static ssize_t sstore_read(struct file * file, char __user * buf, size_t lbuf, l
         return -EPERM;
     }
 
+    /* Wait for data to become available. When available copy to userspace. */
     mutex_lock(&devp->sstore_lock);
     while(devp->sstore_blobp[blob.index] == NULL){
         mutex_unlock(&devp->sstore_lock);
-        if(wait_event_interruptible(devp->sstore_wq, devp->sstore_blobp[blob.index] != NULL)){
+        if(wait_event_interruptible(devp->sstore_wq,
+                    devp->sstore_blobp[blob.index] != NULL)){
             return -ERESTARTSYS;
         }
         mutex_lock(&devp->sstore_lock);
     }
-    bytes_not_copied = copy_to_user(blob.data, devp->sstore_blobp[blob.index]->data, blob.size);
+    bytes_not_copied = copy_to_user(blob.data,
+            devp->sstore_blobp[blob.index]->data, blob.size);
     devp->read_count++;
     mutex_unlock(&devp->sstore_lock);
 
@@ -119,7 +133,8 @@ static ssize_t sstore_read(struct file * file, char __user * buf, size_t lbuf, l
     return blob.size - bytes_not_copied;
 }
 
-static ssize_t sstore_write(struct file * file, const char __user * buf, size_t lbuf, loff_t * ppos)
+static ssize_t sstore_write(struct file * file,
+        const char __user * buf, size_t lbuf, loff_t * ppos)
 {
     int bytes_not_copied = 0;
     struct sstore_blob blob;
@@ -140,12 +155,15 @@ static ssize_t sstore_write(struct file * file, const char __user * buf, size_t 
         return -EPERM;
     }
 
+    /* Allocate space and copy new data into it before locking and updating
+       the blobp. */
     new_data = kmalloc(blob.size, GFP_KERNEL);
     if(!new_data){
         return -ENOMEM;
     }
     bytes_not_copied = copy_from_user(new_data, blob.data, blob.size);
 
+    /* Create new blob and point it at the new data. */
     mutex_lock(&devp->sstore_lock);
     if(devp->sstore_blobp[blob.index] == NULL){
         mutex_unlock(&devp->sstore_lock);
@@ -169,13 +187,15 @@ static ssize_t sstore_write(struct file * file, const char __user * buf, size_t 
     devp->write_count++;
     mutex_unlock(&devp->sstore_lock);
 
+    /* Notify blocking readers that data is available. */
     wake_up(&devp->sstore_wq);
 
     printk(KERN_DEBUG "sstore: Successful write.\n");
     return blob.size - bytes_not_copied;
 }
 
-static long sstore_ioctl(struct file * file, unsigned int cmd, unsigned long arg)
+static long sstore_ioctl(struct file * file,
+        unsigned int cmd, unsigned long arg)
 {
     struct sstore_dev * devp = file->private_data;
     if(cmd == SSTORE_DELETE){
@@ -198,6 +218,7 @@ static long sstore_ioctl(struct file * file, unsigned int cmd, unsigned long arg
         return -EINVAL;
     }
 
+    printk(KERN_DEBUG "sstore: Successful delete.\n");
     return 0;
 }
 
@@ -207,8 +228,7 @@ void * sstore_seq_start(struct seq_file *m, loff_t *pos)
     int dev_num = int_pos / num_of_blobs;
     int index = int_pos % num_of_blobs;
 
-    printk(KERN_DEBUG "sstore: seq started at %d %d\n", dev_num, index);
-
+    /* Return sstore_blob ** so that NULL is not returned. */
     if(dev_num < NUM_SSTORE_DEVICES && index < num_of_blobs){
         mutex_lock(&sstore_devp[dev_num]->sstore_lock);
         return &sstore_devp[dev_num]->sstore_blobp[index];
@@ -223,6 +243,7 @@ void * sstore_seq_next(struct seq_file *m, void *v, loff_t *pos)
     int dev_num = int_pos / num_of_blobs;
     int index = int_pos % num_of_blobs;
 
+    /* Unlock mutex for previous blob. */
     mutex_unlock(&sstore_devp[dev_num]->sstore_lock);
 
     (*pos)++;
@@ -230,8 +251,7 @@ void * sstore_seq_next(struct seq_file *m, void *v, loff_t *pos)
     dev_num = int_pos / num_of_blobs;
     index = int_pos % num_of_blobs;
 
-    printk(KERN_DEBUG "sstore: seq moved to %d %d\n", dev_num, index);
-
+    /* Return sstore_blob ** so that NULL is not returned. */
     if(dev_num < NUM_SSTORE_DEVICES && index < num_of_blobs){
         mutex_lock(&sstore_devp[dev_num]->sstore_lock);
         return &sstore_devp[dev_num]->sstore_blobp[index];
@@ -245,6 +265,7 @@ int sstore_seq_show(struct seq_file *m, void *v)
     int i;
     struct sstore_blob ** blobp = v;
 
+    /* If this is a valid blob print its index, size, and data. */
     if(*blobp){
         seq_printf(m, "%x %x\n", (*blobp)->index, (*blobp)->size);
         for(i = 0; i < (*blobp)->size; ++i){
@@ -252,7 +273,6 @@ int sstore_seq_show(struct seq_file *m, void *v)
         }
         seq_printf(m, "\n");
     }
-    printk(KERN_DEBUG "sstore: seq showed\n");
 
     return 0;
 }
@@ -282,7 +302,8 @@ static struct file_operations sstore_proc_data_fops = {
     .release = seq_release,
 };
 
-int sstore_stats_read_proc(char * page, char **start, off_t off, int count, int *eof, void *data)
+int sstore_stats_read_proc(char * page, char **start,
+        off_t off, int count, int *eof, void *data)
 {
     int i;
     int length = 0;
@@ -291,6 +312,7 @@ int sstore_stats_read_proc(char * page, char **start, off_t off, int count, int 
     int write_counts[NUM_SSTORE_DEVICES];
     int del_counts[NUM_SSTORE_DEVICES];
 
+    /* Read all values at once. */
     for(i = 0; i < NUM_SSTORE_DEVICES; ++i){
         mutex_lock(&sstore_devp[i]->sstore_lock);
         open_counts[i] = sstore_devp[i]->open_count;
@@ -300,11 +322,14 @@ int sstore_stats_read_proc(char * page, char **start, off_t off, int count, int 
         mutex_unlock(&sstore_devp[i]->sstore_lock);
     }
 
-    length += snprintf(page + length, count - length, "device opens reads writes deletes\n");
+    /* Format and print statistics. */
+    length += snprintf(page + length, count - length,
+            "device opens reads writes deletes\n");
     for(i = 0; i < NUM_SSTORE_DEVICES && length < count; ++i){
         length += snprintf(page + length, count - length,
                 "%d %d %d %d %d\n",
-                i, open_counts[i], read_counts[i], write_counts[i], del_counts[i] 
+                i, open_counts[i], read_counts[i],
+                write_counts[i], del_counts[i]
                 );
     }
 
@@ -318,19 +343,23 @@ static int sstore_proc_init(void)
     struct proc_dir_entry * sstore_proc_stats = NULL;
     struct proc_dir_entry * sstore_proc_data = NULL;
 
+    /* Make /proc/sstore. */
     sstore_proc_dir = proc_mkdir(DEV_NAME, NULL);
     if(sstore_proc_dir == NULL){
         rv = -ENOMEM;
-        goto out;
+        goto proc_out;
     }
 
-    sstore_proc_stats = create_proc_read_entry(STATS_NAME, S_IRUSR, sstore_proc_dir, sstore_stats_read_proc, NULL);
+    /* Make /proc/sstore/stats. */
+    sstore_proc_stats = create_proc_read_entry(STATS_NAME, S_IRUSR,
+            sstore_proc_dir, sstore_stats_read_proc, NULL);
     if(sstore_proc_stats == NULL){
         rv = -ENOMEM;
         goto no_stats;
     }
     sstore_proc_stats->owner = THIS_MODULE;
 
+    /* Make /proc/sstore/data. */
     sstore_proc_data = create_proc_entry(DATA_NAME, S_IRUSR, sstore_proc_dir);
     if(sstore_proc_data == NULL){
         rv = -ENOMEM;
@@ -341,23 +370,25 @@ static int sstore_proc_init(void)
 
     return 0;
 
+/* Evil goto error handling. */
 no_data:
     remove_proc_entry(STATS_NAME, sstore_proc_dir);
 no_stats:
     remove_proc_entry(DEV_NAME, NULL);
-out:
+proc_out:
     return rv;
 }
 
 static int __init sstore_init (void)
 {
-    /* TODO: Cleanup if error occurs in the middle of this function */
     int i;
-    int ret;
+    int rv;
 
-    if(alloc_chrdev_region(&sstore_dev_number, sstore_minor, NUM_SSTORE_DEVICES, DEV_NAME) < 0){
+    if(alloc_chrdev_region(&sstore_dev_number,
+                sstore_minor, NUM_SSTORE_DEVICES, DEV_NAME) < 0){
         printk(KERN_DEBUG "sstore: unable to register device.\n");
-        return -EPERM;
+        rv = -EPERM;
+        goto init_out;
     }
     sstore_major = MAJOR(sstore_dev_number);
 
@@ -368,7 +399,8 @@ static int __init sstore_init (void)
         sstore_devp[i] = kmalloc(sizeof(struct sstore_dev), GFP_KERNEL);
         if (!sstore_devp[i]){
             printk(KERN_DEBUG "sstore: bad kmalloc\n");
-            return -ENOMEM;
+            rv = -ENOMEM;
+            goto no_devs;
         }
 
         sstore_devp[i]->open_count = 0;
@@ -377,10 +409,12 @@ static int __init sstore_init (void)
         sstore_devp[i]->del_count = 0;
         sstore_devp[i]->sstore_number = i;
 
-        sstore_devp[i]->sstore_blobp = kzalloc(num_of_blobs * sizeof(struct sstore_dev *), GFP_KERNEL);
+        sstore_devp[i]->sstore_blobp = kzalloc(num_of_blobs *
+                sizeof(struct sstore_dev *), GFP_KERNEL);
         if (!sstore_devp[i]->sstore_blobp){
             printk(KERN_DEBUG "sstore: bad kzalloc\n");
-            return -ENOMEM;
+            rv = -ENOMEM;
+            goto no_blobs;
         }
 
         /* Init lock(s) */
@@ -392,20 +426,42 @@ static int __init sstore_init (void)
         sstore_devp[i]->cdev.owner = THIS_MODULE;
 
         /* Connect the major/minor number to the cdev */
-        ret = cdev_add(&sstore_devp[i]->cdev, MKDEV(sstore_major, sstore_minor + i), 1);
-        if (ret) {
+        rv = cdev_add(&sstore_devp[i]->cdev,
+                MKDEV(sstore_major, sstore_minor + i), 1);
+        if (rv) {
             printk(KERN_DEBUG "sstore: bad cdev\n");
-            return ret;
+            goto no_cdev_connection;
         }
 
         /* Send uevents to udev, so it'll create /dev nodes */
-        device_create(sstore_class, NULL, MKDEV(sstore_major, sstore_minor + i), "sstore%d", i);
+        device_create(sstore_class, NULL,
+                MKDEV(sstore_major, sstore_minor + i), "sstore%d", i);
     }
     
-    sstore_proc_init();
+    rv = sstore_proc_init();
+    if(rv){
+        printk(KERN_DEBUG "sstore: unable to init /proc files.\n");
+        goto no_proc_files;
+    }
 
     printk(KERN_INFO "sstore: driver initialized.\n");
     return 0;
+
+/* Evil goto error handling. */
+no_proc_files:
+    for(; i >=0; --i){
+        device_destroy (sstore_class, MKDEV(sstore_major, sstore_minor + i));
+        cdev_del(&sstore_devp[i]->cdev);
+no_cdev_connection:
+        kfree(sstore_devp[i]->sstore_blob);
+no_blobs:
+        kfree(sstore_devp[i]);
+no_devs:
+    }
+
+    class_destroy(sstore_class);
+init_out:
+    return rv;
 }
 
 static void __exit sstore_exit (void)
@@ -413,7 +469,8 @@ static void __exit sstore_exit (void)
     int i;
 
     /* Release the major number */
-    unregister_chrdev_region(MKDEV(sstore_major, sstore_minor), NUM_SSTORE_DEVICES);
+    unregister_chrdev_region(MKDEV(sstore_major, sstore_minor),
+            NUM_SSTORE_DEVICES);
 
     /* Release I/O region */
     for (i = 0; i < NUM_SSTORE_DEVICES; ++i){
